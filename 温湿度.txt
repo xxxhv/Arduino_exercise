@@ -1,0 +1,61 @@
+#include <LiquidCrystal.h>
+
+// 实例化一个名为lcd的LiquidCrysta类型对象，并初始化相关引脚
+LiquidCrystal lcd(12, 11, 5, 4, 3, 2);
+
+int DHpin = 8;    
+byte dat[5];
+byte read_data() {
+  byte data=0;
+  for (int i = 0; i < 8; i++) {
+      if (digitalRead(DHpin) == LOW) {
+          while (digitalRead(DHpin) == LOW);    //等待50us
+           delayMicroseconds(30);                  	  //判定数据是‘0’还是‘1’
+           if (digitalRead(DHpin) == HIGH)
+              data |= (1 << (7 - i));                           //高位在前，低位在后
+           while (digitalRead(DHpin) == HIGH);   //数据‘1’，等待下一位
+       }
+  }
+  return data;
+}
+void start_test()
+{  digitalWrite(DHpin, LOW);           	//拉低总线，发送开始信号
+  delay(30);                                        	//延时>18ms
+  digitalWrite(DHpin, HIGH); 		//发送高电平
+  delayMicroseconds(40); 		//延时40us，等待响应
+  pinMode(DHpin, INPUT);		//数字I/O口改变为输入
+  while (digitalRead(DHpin) == HIGH);	//等待读得输入高电平
+  delayMicroseconds(80);                    	//拉低总线80us；
+  if (digitalRead(DHpin) == LOW);	//如果数字I/O口输入低电平
+  delayMicroseconds(80);                    	//延时80us，开始接收数据
+  for (int i = 0; i < 4; i++)                       	//接收5字节温湿度数据
+    dat[i] = read_data();
+  pinMode(DHpin, OUTPUT);		 //数字I/O口改变为输出 
+  digitalWrite(DHpin, HIGH);           	//释放总线，等待下一次操作
+}
+
+
+void setup() {
+  Serial.begin(9600);
+  pinMode(DHpin, OUTPUT);
+ 
+}
+void loop() {
+  // 设置LCD有几列几行，1602LCD为16列2行
+  lcd.begin(16, 2);
+  //打印一段信息到LCD上
+  lcd.print("temperature:");
+  lcd.print("dat[2]");
+  lcd.print(".");
+  lcd.print("dat[3]");
+  lcd.print((char)223);
+  lcd.print('C');
+  
+  lcd.setCursor(0, 2);
+  lcd.setCursor(0, 1);
+  lcd.print("humidity:");
+  lcd.print("dat[0]");
+  lcd.print(".");
+  lcd.print("dat[1]");
+  delay(5000)
+}
